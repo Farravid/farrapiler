@@ -1,2 +1,2 @@
 # farrapiler
-Learning how to write modern C++ compiler just for fun
+Learning how to write a Rust compiler just for fun

@@ -1,36 +1,59 @@
-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
+#![windows_subsystem = "windows"] // This attribute hides the console window
 
-use eframe::egui;
-use eframe::egui::{RichText, Color32};
+use druid::widget::{Button, Flex, Label, CrossAxisAlignment, WidgetExt}; // Import WidgetExt
+use druid::{AppLauncher, Env, LocalizedString, Widget, WindowDesc};
+use std::process::Command as SysCommand;
+use nfd::Response;
 
-fn main() -> Result<(), eframe::Error> {
-    //env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
+fn main() {
+    // Create the main window
+    let main_window = WindowDesc::new(build_ui())
+        .title(LocalizedString::new("Windotfiles GUI"))
+        .window_size((400.0, 250.0));
 
-    let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default().with_inner_size([320.0, 240.0]),
-        ..Default::default()
-    };
+    // Launch the application
+    let data = ();
+    AppLauncher::with_window(main_window)
+        .log_to_console()
+        .launch(data)
+        .expect("Failed to launch application");
+}
 
-    // Our application state:
-    let mut name = "David".to_owned();
-    let mut age = 42;
-
-    eframe::run_simple_native("My egui App", options, move |ctx, _frame| {
-        egui::CentralPanel::default().show(ctx, |ui| {
-            ui.heading("My egui Application");
-            ui.horizontal(|ui| {
-                let name_label = ui.label("Your name: ");
-                ui.text_edit_singleline(&mut name)
-                    .labelled_by(name_label.id);
-            });
-            ui.add(egui::Slider::new(&mut age, 0..=120).text("age"));
-            if ui.button("Increment").clicked() {
-                age += 1;
-            }
-            if ui.button(RichText::new("Update Windotfiles").color(Color32::RED)).clicked() {
-                // …
-            }
-            ui.label(format!("Hello '{name}', age {age}"));
+// Build the UI
+fn build_ui() -> impl Widget<()> {
+    let button_python = Button::new("Launch Python Script")
+        .on_click(|_, _: &mut (), _| {
+            let _ = SysCommand::new("wt")
+                .arg("python C:/Users/david/windotfiles/scripts/startup.py") // Change this to your Python script path
+                .spawn()
+                .expect("Failed to execute Python script");
         });
-    })
+
+    let button_powershell = Button::new("Execute PowerShell Command")
+        .on_click(|_, _: &mut (), _| {
+            let _ = SysCommand::new("powershell")
+                .arg("-Command")
+                .arg("Write-Host 'Hello from PowerShell!'")
+                .spawn()
+                .expect("Failed to execute PowerShell command");
+        });
+
+    let button_file_explorer = Button::new("Select File")
+        .on_click(|_, _: &mut (), _env: &Env| {
+            if let Ok(Response::Okay(file_path)) = nfd::open_file_dialog(None, None) {
+                println!("Selected file: {:?}", file_path);
+                // Do something with the selected file path
+            }
+        });
+
+    Flex::column()
+        .cross_axis_alignment(CrossAxisAlignment::Center)
+        .with_child(Label::new("Welcome to Rust GUI App").with_text_size(20.0))
+        .with_default_spacer()
+        .with_child(button_python)
+        .with_default_spacer()
+        .with_child(button_powershell)
+        .with_default_spacer()
+        .with_child(button_file_explorer)
+        .padding(20.0) // Now padding method is available
 }
